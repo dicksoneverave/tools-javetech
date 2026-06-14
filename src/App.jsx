@@ -334,8 +334,8 @@ function PricingCard({ plan }) {
             </button>
           )}
           {step === "checkout" && (
-            <button onClick={() => runCheckout} style={{ ...S.planCta, ...S.planCtaHighlight, border: "none", width: "100%", cursor: "pointer", fontFamily: "inherit" }}>
-              {plan.cta}
+            <button onClick={handleCtaClick} style={{ ...S.planCta, ...S.planCtaHighlight, border: "none", width: "100%", cursor: "pointer", fontFamily: "inherit" }}>
+              {loading ? "Loading…" : plan.cta}
             </button>
           )}
           {step === "email" && (
