@@ -225,7 +225,7 @@ function ToolCard({ tool }) {
 }
 
 // Steps: 'cta' → 'email' → 'otp' → 'redirecting'
-function PricingCard({ plan }) {
+function PricingCard({ plan, isPro, user }) {
   const [step, setStep]     = useState("cta");
   const [email, setEmail]   = useState("");
   const [otp, setOtp]       = useState("");
@@ -330,6 +330,17 @@ function PricingCard({ plan }) {
 
       {plan.highlight ? (
         <>
+          {isPro ? (
+            <div style={{ textAlign: "center", padding: "12px 0" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#F0FDF4", border: "1.5px solid #86EFAC", borderRadius: 8, padding: "10px 20px", color: "#166534", fontWeight: 700, fontSize: 15 }}>
+                ✓ Current plan
+              </div>
+              {user?.email && (
+                <p style={{ fontSize: 11, color: "#6B7280", margin: "8px 0 0" }}>{user.email}</p>
+              )}
+            </div>
+          ) : (
+          <>
           {step === "cta" && (
             <button onClick={handleCtaClick} style={{ ...S.planCta, ...S.planCtaHighlight, border: "none", width: "100%", cursor: "pointer", fontFamily: "inherit" }}>
               {plan.cta}
@@ -379,6 +390,8 @@ function PricingCard({ plan }) {
           {step === "redirecting" && (
             <p style={{ textAlign: "center", color: "#9CA3AF", fontSize: 13 }}>⏳ Opening checkout…</p>
           )}
+          </>
+          )}
         </>
       ) : (
         <Link to="/" style={S.planCta}>{plan.cta}</Link>
@@ -392,16 +405,19 @@ function PricingCard({ plan }) {
 function PricingPage() {
   const location = useLocation();
   const [success, setSuccess] = useState(false);
-  const [isPro, setIsPro] = useState(false);
+  const [isPro, setIsPro]     = useState(false);
+  const [user, setUser]       = useState(null);
 
   useEffect(() => {
-    if (location.search.includes("success=1")) {
+    const isSuccess = location.search.includes("success=1");
+    if (isSuccess) {
       setSuccess(true);
       window.history.replaceState({}, "", location.pathname);
     }
     if (!supabase) return;
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session?.user) return;
+      setUser(session.user);
       const checkTier = () =>
         supabase
           .from("user_subscriptions")
@@ -412,8 +428,7 @@ function PricingPage() {
             if (data?.tier === "pro" || data?.tier === "business") setIsPro(true);
           });
       checkTier();
-      // Re-check after 4 s to catch webhook latency
-      if (location.search.includes("success=1")) setTimeout(checkTier, 4000);
+      if (isSuccess) setTimeout(checkTier, 4000);
     });
   }, [location.search]);
 
@@ -426,7 +441,7 @@ function PricingPage() {
           <div role="alert" style={S.successBanner}>
             <span aria-hidden="true">✅</span>
             {isPro
-              ? "You're on Pro! All limits have been lifted."
+              ? `You're on Pro${user?.email ? ` (${user.email})` : ""}! All limits have been lifted.`
               : "Payment received — your Pro plan is activating. This updates in a few seconds."}
           </div>
         )}
@@ -442,7 +457,7 @@ function PricingPage() {
 
         <div style={S.pricingGrid}>
           {PLANS.map((plan) => (
-            <PricingCard key={plan.name} plan={plan} />
+            <PricingCard key={plan.name} plan={plan} isPro={isPro} user={user} />
           ))}
         </div>
 
