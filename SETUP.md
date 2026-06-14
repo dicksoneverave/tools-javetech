@@ -115,7 +115,7 @@ the payment to the right user. In your Paddle checkout setup:
 ```javascript
 // When opening Paddle checkout
 Paddle.Checkout.open({
-  items: [{ priceId: "pri_pro_monthly", quantity: 1 }],
+  items: [{ priceId: "tools_pro_monthly", quantity: 1 }],
   customData: {
     supabase_user_id: supabase.auth.getUser().data.user.id
   }
@@ -215,18 +215,39 @@ Add `vercel.json` for SPA routing:
 
 ---
 
-### 10. Go-live checklist
+### 10. How returning Pro users access their account
 
-- [ ] Supabase schema deployed and verified
-- [ ] `.env.local` set (local) + environment variables set in Vercel/Netlify
+Pro status is tied to a Supabase account (email). Users can restore their Pro access on any browser or device in two ways:
+
+**Via the Nav (proactive sign-in):**
+1. A **Sign in** button appears in the top-right nav on every page
+2. User enters their email → receives a magic link → clicks it
+3. The page detects sign-in via `onAuthStateChange` → queries `user_subscriptions` → sets `isPro(true)` automatically
+4. Usage limits lift without touching the upgrade modal
+
+**Via the upgrade modal (reactive sign-in):**
+1. User hits a usage limit → upgrade modal appears → they enter their email
+2. Magic link is sent → user clicks it → app signs them in
+3. App checks `user_subscriptions` → finds `tier: pro` → shows **"You're already on Pro!"** — no new Paddle checkout is launched
+4. Limits lift immediately
+
+---
+
+### 11. Go-live checklist
+
+- [ ] Supabase schema deployed and verified (`supabase-schema.sql`)
+- [ ] Supabase URL Configuration set: Site URL = `https://tools.javetech.online`, Redirect URL = `https://tools.javetech.online/*`
+- [ ] `.env.local` set (local) + all environment variables set in Vercel dashboard
+- [ ] Vercel env vars: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_PADDLE_PRO_MONTHLY_PRICE_ID`, `PADDLE_API_KEY`, `PADDLE_ENV`, `PADDLE_WEBHOOK_SECRET`, `SUPABASE_SERVICE_ROLE_KEY` (no VITE_ prefix)
 - [ ] App builds without errors: `npm run build`
 - [ ] Test compress flow as anonymous user (localStorage gate)
 - [ ] Test compress flow as signed-in free user (Supabase gate)
 - [ ] Test file size gate (upload >10 MB — upgrade modal should fire)
 - [ ] Test daily limit gate (use tool 5× — upgrade modal should fire on 6th)
+- [ ] Test upgrade flow: email → magic link → Paddle checkout → webhook → Pro unlocked
+- [ ] Test returning Pro user: new browser → Sign in via Nav → limits lift automatically
 - [ ] AdSense `<ins>` tag added and site submitted for review
-- [ ] Paddle checkout link is correct
-- [ ] Paddle webhook deployed and receiving test events
+- [ ] Paddle webhook URL set to `https://tools.javetech.online/api/webhook`
 - [ ] Google Search Console: add tools.javetech.online as a property
 - [ ] Submit sitemap.xml to Search Console
 
