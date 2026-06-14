@@ -186,7 +186,10 @@ function AdSenseBanner({ slot = "top" }) {
 }
 
 // ─── Upgrade modal ─────────────────────────────────────────────────────────────
-function UpgradeModal({ reason, onClose }) {
+function UpgradeModal({ reason, onClose, user }) {
+  const [loading, setLoading] = useState(false);
+  const [checkoutError, setCheckoutError] = useState("");
+
   const reasons = {
     limit: {
       icon: "🔢",
@@ -200,6 +203,33 @@ function UpgradeModal({ reason, onClose }) {
     },
   };
   const content = reasons[reason] || reasons.limit;
+
+  async function handleUpgrade() {
+    const priceId = import.meta.env.VITE_PADDLE_PRO_MONTHLY_PRICE_ID;
+    if (!priceId) { setCheckoutError("Checkout not configured yet."); return; }
+    if (!user) { setCheckoutError("Please sign in before upgrading."); return; }
+
+    setLoading(true);
+    setCheckoutError("");
+    try {
+      const res = await fetch("/api/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          priceId,
+          userId: user.id,
+          email: user.email,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not start checkout.");
+      if (!data.checkoutUrl) throw new Error("No checkout URL returned.");
+      window.location.href = data.checkoutUrl;
+    } catch (err) {
+      setCheckoutError(err.message);
+      setLoading(false);
+    }
+  }
 
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -223,14 +253,20 @@ function UpgradeModal({ reason, onClose }) {
           </ul>
         </div>
 
-        {/* Replace href with your Paddle checkout URL */}
-        <a
-          href="https://javetech.online/checkout/pro"
+        {checkoutError && (
+          <p style={{ fontSize: 12, color: "#C81E1E", margin: "0 0 12px", textAlign: "center" }}>
+            {checkoutError}
+          </p>
+        )}
+
+        <button
           className="btn-upgrade"
-          onClick={onClose}
+          onClick={handleUpgrade}
+          disabled={loading}
+          style={{ opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}
         >
-          Upgrade to Pro — $5/month
-        </a>
+          {loading ? "Redirecting to checkout…" : "Upgrade to Pro — $5/month"}
+        </button>
         <button className="btn-later" onClick={onClose}>
           Maybe later
         </button>
@@ -251,35 +287,53 @@ export default function CompressPDF() {
   const [upgradeReason, setUpgradeReason] = useState(null); // null | 'limit' | 'filesize'
   const [user, setUser] = useState(null);
   const [isPro, setIsPro] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
   const fileInputRef = useRef(null);
   const dropZoneRef = useRef(null);
 
-  // ── Auth check on mount ──
+  // ── Auth check + payment-success detection on mount ──
   useEffect(() => {
+    // Detect return from Paddle checkout
+    if (window.location.search.includes("success=1")) {
+      setPaymentSuccess(true);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+
     if (!supabase) {
       setUsageCount(getAnonUsage());
       return;
     }
 
+    function loadSession(session) {
+      if (!session?.user) { setUsageCount(getAnonUsage()); return; }
+      setUser(session.user);
+      supabase
+        .from("user_subscriptions")
+        .select("tier")
+        .eq("user_id", session.user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.tier === "pro" || data?.tier === "business") setIsPro(true);
+        });
+      getTodayUsage(session.user.id).then(setUsageCount);
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        // Check subscription tier
-        supabase
-          .from("user_subscriptions")
-          .select("tier")
-          .eq("user_id", session.user.id)
-          .single()
-          .then(({ data }) => {
-            if (data?.tier === "pro" || data?.tier === "business") {
-              setIsPro(true);
-            }
-          });
-        // Load today's usage
-        getTodayUsage(session.user.id).then(setUsageCount);
-      } else {
-        setUsageCount(getAnonUsage());
+      loadSession(session);
+
+      // After successful payment, re-check subscription in 4 s (webhook latency)
+      if (window.location.search.includes("success=1") && session?.user) {
+        setTimeout(() => {
+          supabase
+            .from("user_subscriptions")
+            .select("tier")
+            .eq("user_id", session.user.id)
+            .single()
+            .then(({ data }) => {
+              if (data?.tier === "pro" || data?.tier === "business") setIsPro(true);
+            });
+        }, 4000);
       }
     });
 
@@ -529,9 +583,13 @@ export default function CompressPDF() {
         .usage-upgrade {
           font-size: 11px;
           color: var(--brand);
-          text-decoration: none;
+          background: none;
+          border: none;
+          padding: 0;
+          cursor: pointer;
           white-space: nowrap;
           font-weight: 500;
+          font-family: inherit;
         }
         .usage-upgrade:hover { text-decoration: underline; }
 
@@ -967,6 +1025,21 @@ export default function CompressPDF() {
         </nav>
 
         <main className="cp-main">
+          {/* ── Payment success banner ── */}
+          {paymentSuccess && (
+            <div
+              role="alert"
+              style={{
+                background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: 10,
+                padding: "12px 16px", display: "flex", alignItems: "center", gap: 10,
+                marginBottom: 20, fontSize: 14, color: "#057A55", fontWeight: 500,
+              }}
+            >
+              <span aria-hidden="true">✅</span>
+              Payment successful! Your Pro plan is activating — this page will update in a few seconds.
+            </div>
+          )}
+
           {/* ── Header ── */}
           <header className="cp-header">
             <h1 className="cp-title">Compress PDF</h1>
@@ -1001,12 +1074,13 @@ export default function CompressPDF() {
               <span className="usage-count">
                 {usageCount}/{FREE_DAILY_LIMIT}
               </span>
-              <a
-                href="https://javetech.online/checkout/pro"
+              <button
                 className="usage-upgrade"
+                onClick={() => setUpgradeReason("limit")}
+                type="button"
               >
                 Upgrade
-              </a>
+              </button>
             </div>
           )}
 
@@ -1272,6 +1346,7 @@ export default function CompressPDF() {
         <UpgradeModal
           reason={upgradeReason}
           onClose={() => setUpgradeReason(null)}
+          user={user}
         />
       )}
     </>
