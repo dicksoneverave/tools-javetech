@@ -5,12 +5,8 @@
 
 import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
-import { createClient } from "@supabase/supabase-js";
 import CompressPDF from "./tools/CompressPDF";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = SUPABASE_URL && SUPABASE_KEY ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+import { supabase } from "./supabaseClient";
 
 // ─── Shared nav ───────────────────────────────────────────────────────────────
 function Nav({ crumb }) {

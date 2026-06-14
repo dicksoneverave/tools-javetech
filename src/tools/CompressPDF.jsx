@@ -9,15 +9,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { PDFDocument } from "pdf-lib";
-import { createClient } from "@supabase/supabase-js";
-
-// ─── Supabase client ───────────────────────────────────────────────────────────
-// Replace with your actual project URL and anon key from supabase.com/dashboard
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabase = SUPABASE_URL && SUPABASE_KEY
-  ? createClient(SUPABASE_URL, SUPABASE_KEY)
-  : null;
+import { supabase } from "../supabaseClient";
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 const TOOL_ID = "compress-pdf";
