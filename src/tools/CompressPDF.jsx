@@ -239,13 +239,15 @@ function UpgradeModal({ reason, onClose, user }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ priceId, userId: u.id, email: u.email }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { throw new Error(text.slice(0, 300)); }
       if (!res.ok) throw new Error(data.error || "Could not create checkout.");
       if (!data.transactionId) throw new Error("No transaction ID returned.");
       window.location.href = `https://pay.javetech.online/tools?_ptxn=${data.transactionId}`;
     } catch (err) {
       setError(err.message);
-      setStep(user ? "checkout" : "otp");
+      setStep("checkout");
       setLoading(false);
     }
   }

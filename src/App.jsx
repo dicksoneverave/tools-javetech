@@ -275,7 +275,7 @@ function PricingCard({ plan }) {
 
   async function runCheckout(u) {
     const priceId = import.meta.env.VITE_PADDLE_PRO_MONTHLY_PRICE_ID;
-    if (!priceId) { setError("Checkout not configured."); setLoading(false); return; }
+    if (!priceId) { setError("Checkout not configured — missing price ID."); setLoading(false); return; }
     setStep("redirecting"); setLoading(true);
     try {
       const res  = await fetch("/api/create-checkout", {
@@ -283,11 +283,13 @@ function PricingCard({ plan }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ priceId, userId: u.id, email: u.email }),
       });
-      const data = await res.json();
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { throw new Error(text.slice(0, 300)); }
       if (!res.ok) throw new Error(data.error || "Could not create checkout.");
       window.location.href = `https://pay.javetech.online/tools?_ptxn=${data.transactionId}`;
     } catch (err) {
-      setError(err.message); setStep("otp"); setLoading(false);
+      setError(err.message); setStep("checkout"); setLoading(false);
     }
   }
 
