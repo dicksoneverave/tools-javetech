@@ -232,7 +232,16 @@ function UpgradeModal({ reason, onClose, user }) {
     if (!u) { setError("Something went wrong. Please try again."); return; }
     const priceId = import.meta.env.VITE_PADDLE_PRO_MONTHLY_PRICE_ID;
     if (!priceId) { setError("Checkout not configured yet."); setLoading(false); return; }
-    setStep("redirecting"); setLoading(true);
+    setLoading(true); setError("");
+
+    // Check if already Pro — returning user on a new device
+    const { data: sub } = await supabase.from("user_subscriptions").select("tier").eq("user_id", u.id).single();
+    if (sub?.tier === "pro" || sub?.tier === "business") {
+      setIsPro(true); // lift limits immediately
+      setStep("already-pro"); setLoading(false); return;
+    }
+
+    setStep("redirecting");
     try {
       const res  = await fetch("/api/create-checkout", {
         method: "POST",
@@ -381,6 +390,18 @@ function UpgradeModal({ reason, onClose, user }) {
             ⏳ Opening checkout…
           </p>
         )}
+
+        {/* ── Step: already-pro (returning user on new device) ── */}
+        {step === "already-pro" && (
+          <>
+            <div style={{ textAlign: "center", padding: "8px 0 12px" }}>
+              <div style={{ fontSize: 28, marginBottom: 8 }}>✓</div>
+              <p style={{ fontWeight: 700, fontSize: 16, color: "var(--text-1)", margin: "0 0 4px" }}>You're already on Pro!</p>
+              <p style={{ fontSize: 13, color: "var(--text-2)", margin: 0 }}>Your Pro limits are now active. Close this and keep compressing.</p>
+            </div>
+            <button className="btn-upgrade" onClick={onClose}>Got it — let me compress</button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -448,9 +469,24 @@ export default function CompressPDF() {
       }
     });
 
-    // Listen for auth state changes
+    // Listen for auth state changes — also re-check subscription so Pro status
+    // is picked up immediately when a returning user signs in via the Nav.
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) {
+        supabase.from("tool_usage").select("tier").eq("user_id", u.id); // warm cache
+        supabase
+          .from("user_subscriptions")
+          .select("tier")
+          .eq("user_id", u.id)
+          .single()
+          .then(({ data }) => {
+            if (data?.tier === "pro" || data?.tier === "business") setIsPro(true);
+          });
+      } else {
+        setIsPro(false);
+      }
     });
     return () => listener.subscription.unsubscribe();
   }, []);

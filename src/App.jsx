@@ -8,29 +8,111 @@ import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-do
 import CompressPDF from "./tools/CompressPDF";
 import { supabase } from "./supabaseClient";
 
+// ─── Nav sign-in widget ───────────────────────────────────────────────────────
+function NavAuth() {
+  const [user, setUser]         = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [email, setEmail]       = useState("");
+  const [sent, setSent]         = useState(false);
+  const [loading, setLoading]   = useState(false);
+
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data: { session } }) => setUser(session?.user ?? null));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function sendLink() {
+    if (!email.includes("@") || !supabase) return;
+    setLoading(true);
+    await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: false, emailRedirectTo: window.location.href },
+    });
+    setSent(true);
+    setLoading(false);
+  }
+
+  async function signOut() {
+    await supabase?.auth.signOut();
+    setUser(null);
+    window.location.reload();
+  }
+
+  if (!supabase) return null;
+
+  if (user) {
+    return (
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span style={{ fontSize: 12, color: "#6B7280", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          {user.email}
+        </span>
+        <button onClick={signOut} style={{ fontSize: 12, padding: "4px 10px", border: "1px solid #E5E7EB", borderRadius: 6, background: "#fff", cursor: "pointer", color: "#374151" }}>
+          Sign out
+        </button>
+      </div>
+    );
+  }
+
+  if (sent) {
+    return <span style={{ fontSize: 12, color: "#059669" }}>✓ Check your email</span>;
+  }
+
+  if (showForm) {
+    return (
+      <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+        <input type="email" placeholder="your@email.com" value={email} autoFocus
+          onChange={e => setEmail(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && sendLink()}
+          style={{ fontSize: 13, padding: "5px 10px", border: "1px solid #D1D5DB", borderRadius: 6, width: 170, outline: "none" }}
+        />
+        <button onClick={sendLink} disabled={loading}
+          style={{ fontSize: 12, padding: "5px 12px", background: "#1A56DB", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer" }}>
+          {loading ? "…" : "Send link"}
+        </button>
+        <button onClick={() => setShowForm(false)}
+          style={{ fontSize: 13, background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", lineHeight: 1 }}>✕</button>
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={() => setShowForm(true)}
+      style={{ fontSize: 13, padding: "5px 12px", border: "1px solid #E5E7EB", borderRadius: 6, background: "#fff", cursor: "pointer", color: "#374151" }}>
+      Sign in
+    </button>
+  );
+}
+
 // ─── Shared nav ───────────────────────────────────────────────────────────────
 function Nav({ crumb }) {
   return (
     <nav style={S.nav} aria-label="Site navigation">
       <div style={S.navInner}>
-        <Link to="/" style={S.navLogo}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <rect x="3" y="3" width="8" height="8" rx="1.5" fill="#1A56DB" />
-            <rect x="13" y="3" width="8" height="8" rx="1.5" fill="#1A56DB" opacity=".6" />
-            <rect x="3" y="13" width="8" height="8" rx="1.5" fill="#1A56DB" opacity=".6" />
-            <rect x="13" y="13" width="8" height="8" rx="1.5" fill="#1A56DB" opacity=".35" />
-          </svg>
-          <span>JAVE Tools</span>
-        </Link>
-        {crumb && (
-          <>
-            <span style={S.navSep} aria-hidden="true">›</span>
-            <span style={S.navCrumb}>{crumb}</span>
-          </>
-        )}
-        <Link to="/app/pricing" style={S.navCta}>
-          Go Pro · $5/mo
-        </Link>
+        <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+          <Link to="/" style={S.navLogo}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <rect x="3" y="3" width="8" height="8" rx="1.5" fill="#1A56DB" />
+              <rect x="13" y="3" width="8" height="8" rx="1.5" fill="#1A56DB" opacity=".6" />
+              <rect x="3" y="13" width="8" height="8" rx="1.5" fill="#1A56DB" opacity=".6" />
+              <rect x="13" y="13" width="8" height="8" rx="1.5" fill="#1A56DB" opacity=".35" />
+            </svg>
+            <span>JAVE Tools</span>
+          </Link>
+          {crumb && (
+            <>
+              <span style={S.navSep} aria-hidden="true">›</span>
+              <span style={S.navCrumb}>{crumb}</span>
+            </>
+          )}
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <NavAuth />
+          <Link to="/app/pricing" style={S.navCta}>Go Pro · $5/mo</Link>
+        </div>
       </div>
     </nav>
   );
@@ -276,7 +358,15 @@ function PricingCard({ plan, isPro, user }) {
   async function runCheckout(u) {
     const priceId = import.meta.env.VITE_PADDLE_PRO_MONTHLY_PRICE_ID;
     if (!priceId) { setError("Checkout not configured — missing price ID."); setLoading(false); return; }
-    setStep("redirecting"); setLoading(true);
+    setLoading(true); setError("");
+
+    // Check if already Pro — avoid double-charging a returning user
+    const { data: sub } = await supabase.from("user_subscriptions").select("tier").eq("user_id", u.id).single();
+    if (sub?.tier === "pro" || sub?.tier === "business") {
+      setStep("already-pro"); setLoading(false); return;
+    }
+
+    setStep("redirecting");
     try {
       const res  = await fetch("/api/create-checkout", {
         method: "POST",
@@ -389,6 +479,18 @@ function PricingCard({ plan, isPro, user }) {
           )}
           {step === "redirecting" && (
             <p style={{ textAlign: "center", color: "#9CA3AF", fontSize: 13 }}>⏳ Opening checkout…</p>
+          )}
+          {step === "already-pro" && (
+            <div style={{ textAlign: "center", padding: "8px 0" }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#F0FDF4", border: "1.5px solid #86EFAC", borderRadius: 8, padding: "10px 20px", color: "#166534", fontWeight: 700, fontSize: 15, marginBottom: 8 }}>
+                ✓ You're already on Pro!
+              </div>
+              <p style={{ fontSize: 12, color: "#6B7280", margin: "0 0 10px" }}>Your Pro access is active on this account.</p>
+              <button onClick={() => window.location.reload()}
+                style={{ ...S.planCta, ...S.planCtaHighlight, border: "none", width: "100%", cursor: "pointer", fontFamily: "inherit" }}>
+                Refresh to apply
+              </button>
+            </div>
           )}
           </>
           )}
