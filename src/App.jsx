@@ -228,39 +228,70 @@ function ToolCard({ tool }) {
   );
 }
 
+// Steps: 'cta' → 'email' → 'otp' → 'redirecting'
 function PricingCard({ plan }) {
+  const [step, setStep]     = useState("cta");
+  const [email, setEmail]   = useState("");
+  const [otp, setOtp]       = useState("");
   const [loading, setLoading] = useState(false);
-  const [ctaError, setCtaError] = useState("");
+  const [error, setError]   = useState("");
 
-  async function handleProCheckout() {
+  useEffect(() => {
+    if (!supabase || !plan.highlight) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) setStep("checkout");
+    });
+  }, [plan.highlight]);
+
+  async function sendOtp() {
+    if (!email.includes("@")) { setError("Please enter a valid email."); return; }
+    setLoading(true); setError("");
+    const { error: e } = await supabase.auth.signInWithOtp({
+      email, options: { shouldCreateUser: true },
+    });
+    if (e) { setError(e.message); setLoading(false); return; }
+    setStep("otp"); setLoading(false);
+  }
+
+  async function verifyOtp() {
+    if (otp.length < 6) { setError("Enter the 6-digit code from your email."); return; }
+    setLoading(true); setError("");
+    const { data, error: e } = await supabase.auth.verifyOtp({ email, token: otp, type: "email" });
+    if (e) { setError("Invalid or expired code."); setLoading(false); return; }
+    await runCheckout(data.user);
+  }
+
+  async function runCheckout(u) {
     const priceId = import.meta.env.VITE_PADDLE_PRO_MONTHLY_PRICE_ID;
-    if (!priceId) { setCtaError("Checkout not configured."); return; }
-
-    setLoading(true);
-    setCtaError("");
+    if (!priceId) { setError("Checkout not configured."); setLoading(false); return; }
+    setStep("redirecting"); setLoading(true);
     try {
-      let userId, email;
-      if (supabase) {
-        const { data: { session } } = await supabase.auth.getSession();
-        userId = session?.user?.id;
-        email  = session?.user?.email;
-      }
-      if (!userId) { setCtaError("Please sign in first."); setLoading(false); return; }
-
       const res  = await fetch("/api/create-checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ priceId, userId, email }),
+        body: JSON.stringify({ priceId, userId: u.id, email: u.email }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Could not start checkout.");
-      if (!data.transactionId) throw new Error("No transaction ID returned.");
+      if (!res.ok) throw new Error(data.error || "Could not create checkout.");
       window.location.href = `https://pay.javetech.online/tools?_ptxn=${data.transactionId}`;
     } catch (err) {
-      setCtaError(err.message);
-      setLoading(false);
+      setError(err.message); setStep("otp"); setLoading(false);
     }
   }
+
+  async function handleCtaClick() {
+    if (!supabase) { setError("Not configured."); return; }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) { await runCheckout(session.user); }
+    else { setStep("email"); }
+  }
+
+  const inputStyle = {
+    width: "100%", boxSizing: "border-box", padding: "9px 12px",
+    fontSize: 14, border: "1.5px solid #E5E7EB", borderRadius: 8,
+    outline: "none", fontFamily: "inherit", marginBottom: 8,
+    color: "#111827", background: "#fff",
+  };
 
   return (
     <div style={{ ...S.planCard, ...(plan.highlight ? S.planCardHighlight : {}) }}>
@@ -280,23 +311,52 @@ function PricingCard({ plan }) {
           </li>
         ))}
       </ul>
-      {ctaError && (
-        <p style={{ fontSize: 11, color: "#C81E1E", margin: "0 0 8px", textAlign: "center" }}>
-          {ctaError}
-        </p>
-      )}
+
+      {error && <p style={{ fontSize: 11, color: "#C81E1E", margin: "0 0 8px" }}>{error}</p>}
+
       {plan.highlight ? (
-        <button
-          onClick={handleProCheckout}
-          disabled={loading}
-          style={{
-            ...S.planCta, ...S.planCtaHighlight,
-            border: "none", width: "100%", cursor: loading ? "not-allowed" : "pointer",
-            opacity: loading ? 0.7 : 1, fontFamily: "inherit",
-          }}
-        >
-          {loading ? "Redirecting to checkout…" : plan.cta}
-        </button>
+        <>
+          {step === "cta" && (
+            <button onClick={handleCtaClick} style={{ ...S.planCta, ...S.planCtaHighlight, border: "none", width: "100%", cursor: "pointer", fontFamily: "inherit" }}>
+              {plan.cta}
+            </button>
+          )}
+          {step === "checkout" && (
+            <button onClick={() => runCheckout} style={{ ...S.planCta, ...S.planCtaHighlight, border: "none", width: "100%", cursor: "pointer", fontFamily: "inherit" }}>
+              {plan.cta}
+            </button>
+          )}
+          {step === "email" && (
+            <>
+              <p style={{ fontSize: 12, color: "#6B7280", margin: "0 0 8px" }}>Create a free account to upgrade</p>
+              <input type="email" placeholder="your@email.com" value={email} autoFocus
+                style={inputStyle} onChange={e => { setEmail(e.target.value); setError(""); }}
+                onKeyDown={e => e.key === "Enter" && sendOtp()} />
+              <button onClick={sendOtp} disabled={loading} style={{ ...S.planCta, ...S.planCtaHighlight, border: "none", width: "100%", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, fontFamily: "inherit" }}>
+                {loading ? "Sending…" : "Continue →"}
+              </button>
+            </>
+          )}
+          {step === "otp" && (
+            <>
+              <p style={{ fontSize: 12, color: "#6B7280", margin: "0 0 8px" }}>6-digit code sent to {email}</p>
+              <input type="text" inputMode="numeric" placeholder="000000" value={otp} autoFocus maxLength={6}
+                style={{ ...inputStyle, textAlign: "center", letterSpacing: "0.2em", fontSize: 18 }}
+                onChange={e => { setOtp(e.target.value.replace(/\D/g,"").slice(0,6)); setError(""); }}
+                onKeyDown={e => e.key === "Enter" && verifyOtp()} />
+              <button onClick={verifyOtp} disabled={loading} style={{ ...S.planCta, ...S.planCtaHighlight, border: "none", width: "100%", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, fontFamily: "inherit" }}>
+                {loading ? "Verifying…" : "Verify & upgrade →"}
+              </button>
+              <button onClick={() => { setStep("email"); setOtp(""); setError(""); }}
+                style={{ background: "none", border: "none", fontSize: 12, color: "#9CA3AF", cursor: "pointer", marginTop: 6, padding: 0 }}>
+                ← Back
+              </button>
+            </>
+          )}
+          {step === "redirecting" && (
+            <p style={{ textAlign: "center", color: "#9CA3AF", fontSize: 13 }}>⏳ Opening checkout…</p>
+          )}
+        </>
       ) : (
         <Link to="/" style={S.planCta}>{plan.cta}</Link>
       )}

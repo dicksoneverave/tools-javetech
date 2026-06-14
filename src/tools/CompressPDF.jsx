@@ -186,9 +186,62 @@ function AdSenseBanner({ slot = "top" }) {
 }
 
 // ─── Upgrade modal ─────────────────────────────────────────────────────────────
+// Steps: 'email' → 'otp' → 'checkout' (if signed in already, start at 'checkout')
 function UpgradeModal({ reason, onClose, user }) {
+  const [step, setStep]     = useState(() => user ? "checkout" : "email");
+  const [email, setEmail]   = useState(user?.email ?? "");
+  const [otp, setOtp]       = useState("");
   const [loading, setLoading] = useState(false);
-  const [checkoutError, setCheckoutError] = useState("");
+  const [error, setError]   = useState("");
+
+  // If the parent signs the user in (e.g. via onAuthStateChange), advance step
+  useEffect(() => {
+    if (user && step === "email") setStep("checkout");
+  }, [user]);
+
+  async function sendOtp() {
+    if (!email.includes("@")) { setError("Please enter a valid email address."); return; }
+    setLoading(true); setError("");
+    const { error: e } = await supabase.auth.signInWithOtp({
+      email,
+      options: { shouldCreateUser: true },
+    });
+    if (e) { setError(e.message); setLoading(false); return; }
+    setStep("otp"); setLoading(false);
+  }
+
+  async function verifyOtp() {
+    if (otp.length < 6) { setError("Please enter the 6-digit code from your email."); return; }
+    setLoading(true); setError("");
+    const { data, error: e } = await supabase.auth.verifyOtp({
+      email, token: otp, type: "email",
+    });
+    if (e) { setError("Invalid or expired code — please try again."); setLoading(false); return; }
+    await startCheckout(data.user);
+  }
+
+  async function startCheckout(currentUser) {
+    const u = currentUser || user;
+    if (!u) { setError("Something went wrong. Please try again."); return; }
+    const priceId = import.meta.env.VITE_PADDLE_PRO_MONTHLY_PRICE_ID;
+    if (!priceId) { setError("Checkout not configured yet."); setLoading(false); return; }
+    setStep("redirecting"); setLoading(true);
+    try {
+      const res  = await fetch("/api/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId, userId: u.id, email: u.email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not create checkout.");
+      if (!data.transactionId) throw new Error("No transaction ID returned.");
+      window.location.href = `https://pay.javetech.online/tools?_ptxn=${data.transactionId}`;
+    } catch (err) {
+      setError(err.message);
+      setStep(user ? "checkout" : "otp");
+      setLoading(false);
+    }
+  }
 
   const reasons = {
     limit: {
@@ -203,34 +256,6 @@ function UpgradeModal({ reason, onClose, user }) {
     },
   };
   const content = reasons[reason] || reasons.limit;
-
-  async function handleUpgrade() {
-    const priceId = import.meta.env.VITE_PADDLE_PRO_MONTHLY_PRICE_ID;
-    if (!priceId) { setCheckoutError("Checkout not configured yet."); return; }
-    if (!user) { setCheckoutError("Please sign in before upgrading."); return; }
-
-    setLoading(true);
-    setCheckoutError("");
-    try {
-      const res = await fetch("/api/create-checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          priceId,
-          userId: user.id,
-          email: user.email,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Could not start checkout.");
-      if (!data.transactionId) throw new Error("No transaction ID returned.");
-      // Delegate to the centralized pay page which opens the Paddle overlay
-      window.location.href = `https://pay.javetech.online/tools?_ptxn=${data.transactionId}`;
-    } catch (err) {
-      setCheckoutError(err.message);
-      setLoading(false);
-    }
-  }
 
   return (
     <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -254,23 +279,94 @@ function UpgradeModal({ reason, onClose, user }) {
           </ul>
         </div>
 
-        {checkoutError && (
-          <p style={{ fontSize: 12, color: "#C81E1E", margin: "0 0 12px", textAlign: "center" }}>
-            {checkoutError}
+        {error && (
+          <p style={{ fontSize: 12, color: "var(--danger)", margin: "0 0 10px", textAlign: "center" }}>
+            {error}
           </p>
         )}
 
-        <button
-          className="btn-upgrade"
-          onClick={handleUpgrade}
-          disabled={loading}
-          style={{ opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}
-        >
-          {loading ? "Redirecting to checkout…" : "Upgrade to Pro — $5/month"}
-        </button>
-        <button className="btn-later" onClick={onClose}>
-          Maybe later
-        </button>
+        {/* ── Step: email ── */}
+        {step === "email" && (
+          <>
+            <p style={{ fontSize: 12, color: "var(--text-2)", margin: "0 0 8px", textAlign: "center" }}>
+              Create a free account to continue
+            </p>
+            <input
+              type="email"
+              placeholder="your@email.com"
+              value={email}
+              autoFocus
+              onChange={(e) => { setEmail(e.target.value); setError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && sendOtp()}
+              className="modal-input"
+              aria-label="Email address"
+            />
+            <button
+              className="btn-upgrade"
+              onClick={sendOtp}
+              disabled={loading}
+              style={{ opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}
+            >
+              {loading ? "Sending code…" : "Continue with email →"}
+            </button>
+            <button className="btn-later" onClick={onClose}>Maybe later</button>
+          </>
+        )}
+
+        {/* ── Step: OTP ── */}
+        {step === "otp" && (
+          <>
+            <p style={{ fontSize: 12, color: "var(--text-2)", margin: "0 0 8px", textAlign: "center" }}>
+              We emailed a 6-digit code to <strong>{email}</strong>
+            </p>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="000000"
+              value={otp}
+              autoFocus
+              maxLength={6}
+              onChange={(e) => { setOtp(e.target.value.replace(/\D/g, "").slice(0, 6)); setError(""); }}
+              onKeyDown={(e) => e.key === "Enter" && verifyOtp()}
+              className="modal-input"
+              style={{ textAlign: "center", letterSpacing: "0.25em", fontSize: 20 }}
+              aria-label="Verification code"
+            />
+            <button
+              className="btn-upgrade"
+              onClick={verifyOtp}
+              disabled={loading}
+              style={{ opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}
+            >
+              {loading ? "Verifying…" : "Verify & go to checkout →"}
+            </button>
+            <button className="btn-later" onClick={() => { setStep("email"); setOtp(""); setError(""); }}>
+              ← Back
+            </button>
+          </>
+        )}
+
+        {/* ── Step: checkout (already signed in) ── */}
+        {step === "checkout" && (
+          <>
+            <button
+              className="btn-upgrade"
+              onClick={() => startCheckout()}
+              disabled={loading}
+              style={{ opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}
+            >
+              {loading ? "Redirecting to checkout…" : "Upgrade to Pro — $5/month"}
+            </button>
+            <button className="btn-later" onClick={onClose}>Maybe later</button>
+          </>
+        )}
+
+        {/* ── Step: redirecting ── */}
+        {step === "redirecting" && (
+          <p style={{ textAlign: "center", color: "var(--text-3)", fontSize: 13, margin: "8px 0 0" }}>
+            ⏳ Opening checkout…
+          </p>
+        )}
       </div>
     </div>
   );
@@ -990,6 +1086,22 @@ export default function CompressPDF() {
           box-sizing: border-box;
         }
         .btn-upgrade:hover { background: var(--brand-dark); }
+        .modal-input {
+          width: 100%;
+          box-sizing: border-box;
+          padding: 10px 12px;
+          font-size: 15px;
+          border: 1.5px solid var(--border);
+          border-radius: var(--radius-md);
+          outline: none;
+          font-family: inherit;
+          margin-bottom: 10px;
+          color: var(--text-1);
+          background: var(--surface);
+          transition: border-color 0.15s;
+        }
+        .modal-input:focus { border-color: var(--brand); }
+
         .btn-later {
           background: none;
           border: none;
