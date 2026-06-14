@@ -1,12 +1,8 @@
 // POST /api/create-checkout
 // Body: { priceId, userId, email }
 // Returns: { transactionId }
-//
-// Creates a draft Paddle Billing transaction. The caller redirects the user to
-// https://pay.javetech.online/tools?_ptxn={transactionId}, which opens the
-// Paddle checkout overlay and handles success/error redirects.
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   const { priceId, userId, email } = req.body
@@ -16,14 +12,11 @@ module.exports = async function handler(req, res) {
   const isSandbox = (process.env.PADDLE_ENV || 'sandbox') === 'sandbox'
   const baseUrl   = isSandbox ? 'https://sandbox-api.paddle.com' : 'https://api.paddle.com'
 
-  // pay.javetech.online will handle the overlay; it redirects back here on success
-  const payPageUrl = 'https://pay.javetech.online/tools'
-
   if (!apiKey) return res.status(500).json({ error: 'Paddle API key not configured.' })
 
   const payload = {
     items: [{ price_id: priceId, quantity: 1 }],
-    checkout: { url: payPageUrl },   // pay page reads ?_ptxn and opens overlay
+    checkout: { url: 'https://pay.javetech.online/tools' },
     custom_data: { userId },
     ...(email ? { customer: { email } } : {}),
   }
@@ -51,6 +44,6 @@ module.exports = async function handler(req, res) {
     return res.json({ transactionId })
   } catch (err) {
     console.error('[checkout] error:', err.message)
-    return res.status(500).json({ error: 'Server error creating checkout.' })
+    return res.status(500).json({ error: `Server error: ${err.message}` })
   }
 }
