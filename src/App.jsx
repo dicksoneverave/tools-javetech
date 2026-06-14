@@ -202,6 +202,28 @@ const PLANS = [
 
 // ─── Homepage ─────────────────────────────────────────────────────────────────
 function ToolsHome() {
+  const [isPro, setIsPro] = useState(false);
+  const [user, setUser]   = useState(null);
+
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) return;
+      setUser(session.user);
+      supabase.from("user_subscriptions").select("tier").eq("user_id", session.user.id).single()
+        .then(({ data }) => { if (data?.tier === "pro" || data?.tier === "business") setIsPro(true); });
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) {
+        supabase.from("user_subscriptions").select("tier").eq("user_id", u.id).single()
+          .then(({ data }) => { if (data?.tier === "pro" || data?.tier === "business") setIsPro(true); else setIsPro(false); });
+      } else { setIsPro(false); }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
   return (
     <div style={S.page}>
       <Nav />
@@ -248,7 +270,7 @@ function ToolsHome() {
           </p>
           <div style={S.pricingGrid}>
             {PLANS.map((plan) => (
-              <PricingCard key={plan.name} plan={plan} />
+              <PricingCard key={plan.name} plan={plan} isPro={isPro} user={user} />
             ))}
           </div>
         </section>
