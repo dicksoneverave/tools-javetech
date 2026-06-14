@@ -247,7 +247,11 @@ function PricingCard({ plan }) {
     if (!email.includes("@")) { setError("Please enter a valid email."); return; }
     setLoading(true); setError("");
     const { error: e } = await supabase.auth.signInWithOtp({
-      email, options: { shouldCreateUser: true },
+      email,
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: window.location.href,
+      },
     });
     if (e) { setError(e.message); setLoading(false); return; }
     setStep("otp"); setLoading(false);

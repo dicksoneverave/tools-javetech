@@ -204,7 +204,10 @@ function UpgradeModal({ reason, onClose, user }) {
     setLoading(true); setError("");
     const { error: e } = await supabase.auth.signInWithOtp({
       email,
-      options: { shouldCreateUser: true },
+      options: {
+        shouldCreateUser: true,
+        emailRedirectTo: window.location.href,
+      },
     });
     if (e) { setError(e.message); setLoading(false); return; }
     setStep("otp"); setLoading(false);
