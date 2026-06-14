@@ -1,7 +1,10 @@
 // POST /api/create-checkout
 // Body: { priceId, userId, email }
-// Returns: { checkoutUrl }
-// Creates a Paddle Billing transaction and returns the hosted checkout URL.
+// Returns: { transactionId }
+//
+// Creates a draft Paddle Billing transaction. The caller redirects the user to
+// https://pay.javetech.online/tools?_ptxn={transactionId}, which opens the
+// Paddle checkout overlay and handles success/error redirects.
 
 module.exports = async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -12,13 +15,15 @@ module.exports = async function handler(req, res) {
   const apiKey    = process.env.PADDLE_API_KEY
   const isSandbox = (process.env.PADDLE_ENV || 'sandbox') === 'sandbox'
   const baseUrl   = isSandbox ? 'https://sandbox-api.paddle.com' : 'https://api.paddle.com'
-  const returnUrl = 'https://tools.javetech.online/compress-pdf?success=1'
+
+  // pay.javetech.online will handle the overlay; it redirects back here on success
+  const payPageUrl = 'https://pay.javetech.online/tools'
 
   if (!apiKey) return res.status(500).json({ error: 'Paddle API key not configured.' })
 
   const payload = {
     items: [{ price_id: priceId, quantity: 1 }],
-    checkout: { url: returnUrl },
+    checkout: { url: payPageUrl },   // pay page reads ?_ptxn and opens overlay
     custom_data: { userId },
     ...(email ? { customer: { email } } : {}),
   }
@@ -40,16 +45,10 @@ module.exports = async function handler(req, res) {
       return res.status(500).json({ error: data?.error?.detail || 'Failed to create Paddle checkout.' })
     }
 
-    // Paddle Billing returns the hosted checkout URL in data.checkout.url
-    const checkoutUrl = data?.data?.checkout?.url
-    if (!checkoutUrl) {
-      // Fallback: manual construction using the transaction ID
-      const transactionId = data?.data?.id
-      if (!transactionId) return res.status(500).json({ error: 'No checkout URL from Paddle.' })
-      return res.json({ checkoutUrl: `${returnUrl}&_ptxn=${transactionId}` })
-    }
+    const transactionId = data?.data?.id
+    if (!transactionId) return res.status(500).json({ error: 'No transaction ID from Paddle.' })
 
-    return res.json({ checkoutUrl })
+    return res.json({ transactionId })
   } catch (err) {
     console.error('[checkout] error:', err.message)
     return res.status(500).json({ error: 'Server error creating checkout.' })

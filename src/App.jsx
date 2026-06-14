@@ -3,8 +3,14 @@
  * Router + homepage for the JAVE Tools suite.
  */
 
+import { useState, useEffect } from "react";
 import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
+import { createClient } from "@supabase/supabase-js";
 import CompressPDF from "./tools/CompressPDF";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabase = SUPABASE_URL && SUPABASE_KEY ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 // ─── Shared nav ───────────────────────────────────────────────────────────────
 function Nav({ crumb }) {
@@ -253,11 +259,81 @@ function PricingCard({ plan }) {
 }
 
 // ─── Router ───────────────────────────────────────────────────────────────────
+// ─── /app/pricing — payment success landing & upgrade page ──────────────────
+function PricingPage() {
+  const location = useLocation();
+  const [success, setSuccess] = useState(false);
+  const [isPro, setIsPro] = useState(false);
+
+  useEffect(() => {
+    if (location.search.includes("success=1")) {
+      setSuccess(true);
+      window.history.replaceState({}, "", location.pathname);
+    }
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) return;
+      const checkTier = () =>
+        supabase
+          .from("user_subscriptions")
+          .select("tier")
+          .eq("user_id", session.user.id)
+          .single()
+          .then(({ data }) => {
+            if (data?.tier === "pro" || data?.tier === "business") setIsPro(true);
+          });
+      checkTier();
+      // Re-check after 4 s to catch webhook latency
+      if (location.search.includes("success=1")) setTimeout(checkTier, 4000);
+    });
+  }, [location.search]);
+
+  return (
+    <div style={S.page}>
+      <Nav crumb="Pricing" />
+      <main style={{ ...S.main, maxWidth: 680 }}>
+
+        {success && (
+          <div role="alert" style={S.successBanner}>
+            <span aria-hidden="true">✅</span>
+            {isPro
+              ? "You're on Pro! All limits have been lifted."
+              : "Payment received — your Pro plan is activating. This updates in a few seconds."}
+          </div>
+        )}
+
+        <header style={{ marginBottom: 36 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.5px", margin: "0 0 8px" }}>
+            Simple pricing
+          </h1>
+          <p style={{ fontSize: 15, color: "#4B5563", margin: 0 }}>
+            Start free. Upgrade when you need more.
+          </p>
+        </header>
+
+        <div style={S.pricingGrid}>
+          {PLANS.map((plan) => (
+            <PricingCard key={plan.name} plan={plan} />
+          ))}
+        </div>
+
+        <div style={{ marginTop: 40, textAlign: "center" }}>
+          <Link to="/" style={{ fontSize: 13, color: "#1A56DB", textDecoration: "none" }}>
+            ← Back to all tools
+          </Link>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+// ─── Router ───────────────────────────────────────────────────────────────────
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/"                  element={<ToolsHome />} />
+        <Route path="/app/pricing"       element={<PricingPage />} />
         {/* PDF tools */}
         <Route path="/compress-pdf"      element={<CompressPDF />} />
         <Route path="/merge-pdf"         element={<ComingSoon name="Merge PDF" />} />
@@ -551,4 +627,10 @@ const S = {
   comingTitle: { fontSize: 24, fontWeight: 700, color: "#111827", margin: "16px 0 8px" },
   comingBody: { fontSize: 14, color: "#6B7280", margin: "0 0 24px" },
   comingBack: { fontSize: 14, color: "#1A56DB", textDecoration: "none" },
+
+  successBanner: {
+    background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: 10,
+    padding: "14px 18px", display: "flex", alignItems: "center", gap: 10,
+    marginBottom: 28, fontSize: 14, color: "#057A55", fontWeight: 500,
+  },
 };

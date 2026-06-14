@@ -223,8 +223,9 @@ function UpgradeModal({ reason, onClose, user }) {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not start checkout.");
-      if (!data.checkoutUrl) throw new Error("No checkout URL returned.");
-      window.location.href = data.checkoutUrl;
+      if (!data.transactionId) throw new Error("No transaction ID returned.");
+      // Delegate to the centralized pay page which opens the Paddle overlay
+      window.location.href = `https://pay.javetech.online/tools?_ptxn=${data.transactionId}`;
     } catch (err) {
       setCheckoutError(err.message);
       setLoading(false);
@@ -294,7 +295,7 @@ export default function CompressPDF() {
 
   // ── Auth check + payment-success detection on mount ──
   useEffect(() => {
-    // Detect return from Paddle checkout
+    // Detect success param if user lands back on this page directly
     if (window.location.search.includes("success=1")) {
       setPaymentSuccess(true);
       window.history.replaceState({}, "", window.location.pathname);
