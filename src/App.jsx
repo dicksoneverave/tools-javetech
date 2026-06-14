@@ -32,9 +32,9 @@ function Nav({ crumb }) {
             <span style={S.navCrumb}>{crumb}</span>
           </>
         )}
-        <a href="https://javetech.online/checkout/pro" style={S.navCta}>
+        <Link to="/app/pricing" style={S.navCta}>
           Go Pro · $5/mo
-        </a>
+        </Link>
       </div>
     </nav>
   );
@@ -110,7 +110,6 @@ const PLANS = [
     price: "$5",
     period: "/month",
     cta: "Upgrade to Pro",
-    ctaHref: "https://javetech.online/checkout/pro",
     highlight: true,
     features: [
       "Unlimited uses per day",
@@ -230,6 +229,39 @@ function ToolCard({ tool }) {
 }
 
 function PricingCard({ plan }) {
+  const [loading, setLoading] = useState(false);
+  const [ctaError, setCtaError] = useState("");
+
+  async function handleProCheckout() {
+    const priceId = import.meta.env.VITE_PADDLE_PRO_MONTHLY_PRICE_ID;
+    if (!priceId) { setCtaError("Checkout not configured."); return; }
+
+    setLoading(true);
+    setCtaError("");
+    try {
+      let userId, email;
+      if (supabase) {
+        const { data: { session } } = await supabase.auth.getSession();
+        userId = session?.user?.id;
+        email  = session?.user?.email;
+      }
+      if (!userId) { setCtaError("Please sign in first."); setLoading(false); return; }
+
+      const res  = await fetch("/api/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ priceId, userId, email }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not start checkout.");
+      if (!data.transactionId) throw new Error("No transaction ID returned.");
+      window.location.href = `https://pay.javetech.online/tools?_ptxn=${data.transactionId}`;
+    } catch (err) {
+      setCtaError(err.message);
+      setLoading(false);
+    }
+  }
+
   return (
     <div style={{ ...S.planCard, ...(plan.highlight ? S.planCardHighlight : {}) }}>
       {plan.highlight && <div style={S.planBadge}>Most popular</div>}
@@ -248,12 +280,26 @@ function PricingCard({ plan }) {
           </li>
         ))}
       </ul>
-      <a
-        href={plan.ctaHref}
-        style={{ ...S.planCta, ...(plan.highlight ? S.planCtaHighlight : {}) }}
-      >
-        {plan.cta}
-      </a>
+      {ctaError && (
+        <p style={{ fontSize: 11, color: "#C81E1E", margin: "0 0 8px", textAlign: "center" }}>
+          {ctaError}
+        </p>
+      )}
+      {plan.highlight ? (
+        <button
+          onClick={handleProCheckout}
+          disabled={loading}
+          style={{
+            ...S.planCta, ...S.planCtaHighlight,
+            border: "none", width: "100%", cursor: loading ? "not-allowed" : "pointer",
+            opacity: loading ? 0.7 : 1, fontFamily: "inherit",
+          }}
+        >
+          {loading ? "Redirecting to checkout…" : plan.cta}
+        </button>
+      ) : (
+        <Link to="/" style={S.planCta}>{plan.cta}</Link>
+      )}
     </div>
   );
 }
