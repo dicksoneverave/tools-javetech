@@ -243,6 +243,18 @@ function PricingCard({ plan }) {
     });
   }, [plan.highlight]);
 
+  // Auto-proceed when user clicks the magic link in their email.
+  // onAuthStateChange fires across tabs via localStorage — no polling needed.
+  useEffect(() => {
+    if (step !== "otp" || !supabase) return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === "SIGNED_IN" || event === "USER_UPDATED") && session?.user) {
+        runCheckout(session.user);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [step]);
+
   async function sendOtp() {
     if (!email.includes("@")) { setError("Please enter a valid email."); return; }
     setLoading(true); setError("");
@@ -343,13 +355,22 @@ function PricingCard({ plan }) {
           )}
           {step === "otp" && (
             <>
-              <p style={{ fontSize: 12, color: "#6B7280", margin: "0 0 8px" }}>6-digit code sent to {email}</p>
-              <input type="text" inputMode="numeric" placeholder="000000" value={otp} autoFocus maxLength={6}
+              <p style={{ fontSize: 13, color: "#374151", margin: "0 0 4px", textAlign: "center" }}>
+                Check your inbox at <strong>{email}</strong>
+              </p>
+              <p style={{ fontSize: 12, color: "#6B7280", margin: "0 0 12px", textAlign: "center" }}>
+                Click the link in the email — this page will continue automatically.
+              </p>
+              <p style={{ fontSize: 11, color: "#9CA3AF", margin: "0 0 6px", textAlign: "center" }}>
+                Received a 6-digit code instead? Enter it below:
+              </p>
+              <input type="text" inputMode="numeric" placeholder="000000" value={otp} maxLength={6}
                 style={{ ...inputStyle, textAlign: "center", letterSpacing: "0.2em", fontSize: 18 }}
                 onChange={e => { setOtp(e.target.value.replace(/\D/g,"").slice(0,6)); setError(""); }}
-                onKeyDown={e => e.key === "Enter" && verifyOtp()} />
-              <button onClick={verifyOtp} disabled={loading} style={{ ...S.planCta, ...S.planCtaHighlight, border: "none", width: "100%", cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1, fontFamily: "inherit" }}>
-                {loading ? "Verifying…" : "Verify & upgrade →"}
+                onKeyDown={e => e.key === "Enter" && otp.length === 6 && verifyOtp()} />
+              <button onClick={verifyOtp} disabled={otp.length < 6 || loading}
+                style={{ ...S.planCta, ...S.planCtaHighlight, border: "none", width: "100%", cursor: (otp.length < 6 || loading) ? "not-allowed" : "pointer", opacity: (otp.length < 6 || loading) ? 0.5 : 1, fontFamily: "inherit" }}>
+                {loading ? "Verifying…" : "Verify code →"}
               </button>
               <button onClick={() => { setStep("email"); setOtp(""); setError(""); }}
                 style={{ background: "none", border: "none", fontSize: 12, color: "#9CA3AF", cursor: "pointer", marginTop: 6, padding: 0 }}>

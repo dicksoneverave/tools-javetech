@@ -199,6 +199,18 @@ function UpgradeModal({ reason, onClose, user }) {
     if (user && step === "email") setStep("checkout");
   }, [user]);
 
+  // Auto-proceed when user clicks the magic link in their email.
+  // onAuthStateChange fires across tabs via localStorage — no polling needed.
+  useEffect(() => {
+    if (step !== "otp" || !supabase) return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if ((event === "SIGNED_IN" || event === "USER_UPDATED") && session?.user) {
+        startCheckout(session.user);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [step]);
+
   async function sendOtp() {
     if (!email.includes("@")) { setError("Please enter a valid email address."); return; }
     setLoading(true); setError("");
@@ -319,18 +331,23 @@ function UpgradeModal({ reason, onClose, user }) {
         {/* ── Step: OTP ── */}
         {step === "otp" && (
           <>
-            <p style={{ fontSize: 12, color: "var(--text-2)", margin: "0 0 8px", textAlign: "center" }}>
-              We emailed a 6-digit code to <strong>{email}</strong>
+            <p style={{ fontSize: 13, color: "var(--text-2)", margin: "0 0 4px", textAlign: "center" }}>
+              Check your inbox at <strong>{email}</strong>
+            </p>
+            <p style={{ fontSize: 12, color: "var(--text-2)", margin: "0 0 12px", textAlign: "center" }}>
+              Click the link in the email — this page will continue automatically.
+            </p>
+            <p style={{ fontSize: 11, color: "var(--text-3)", margin: "0 0 6px", textAlign: "center" }}>
+              Received a 6-digit code instead? Enter it below:
             </p>
             <input
               type="text"
               inputMode="numeric"
               placeholder="000000"
               value={otp}
-              autoFocus
               maxLength={6}
               onChange={(e) => { setOtp(e.target.value.replace(/\D/g, "").slice(0, 6)); setError(""); }}
-              onKeyDown={(e) => e.key === "Enter" && verifyOtp()}
+              onKeyDown={(e) => e.key === "Enter" && otp.length === 6 && verifyOtp()}
               className="modal-input"
               style={{ textAlign: "center", letterSpacing: "0.25em", fontSize: 20 }}
               aria-label="Verification code"
@@ -338,10 +355,10 @@ function UpgradeModal({ reason, onClose, user }) {
             <button
               className="btn-upgrade"
               onClick={verifyOtp}
-              disabled={loading}
-              style={{ opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}
+              disabled={otp.length < 6 || loading}
+              style={{ opacity: (otp.length < 6 || loading) ? 0.5 : 1, cursor: (otp.length < 6 || loading) ? "not-allowed" : "pointer" }}
             >
-              {loading ? "Verifying…" : "Verify & go to checkout →"}
+              {loading ? "Verifying…" : "Verify code →"}
             </button>
             <button className="btn-later" onClick={() => { setStep("email"); setOtp(""); setError(""); }}>
               ← Back
