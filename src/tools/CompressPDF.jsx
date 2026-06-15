@@ -613,39 +613,44 @@ export default function CompressPDF() {
       <style>{`
         /* ── Design tokens ── */
         :root {
-          --brand:       #1A56DB;
-          --brand-light: #EEF3FF;
-          --brand-dark:  #1240A8;
-          --success:     #057A55;
-          --success-bg:  #ECFDF5;
-          --warn:        #B45309;
-          --warn-bg:     #FFFBEB;
-          --danger:      #C81E1E;
-          --danger-bg:   #FEF2F2;
-          --text-1:      #111827;
-          --text-2:      #4B5563;
-          --text-3:      #9CA3AF;
-          --bg:          #F9FAFB;
-          --surface:     #FFFFFF;
-          --border:      #E5E7EB;
+          --brand:       #7c3aed;
+          --brand-light: rgba(124,58,237,.12);
+          --brand-dark:  #9f67ff;
+          --success:     #22c55e;
+          --success-bg:  rgba(34,197,94,.1);
+          --warn:        #f59e0b;
+          --warn-bg:     rgba(245,158,11,.1);
+          --danger:      #ef4444;
+          --danger-bg:   rgba(239,68,68,.1);
+          --text-1:      #f1f5f9;
+          --text-2:      #8892a4;
+          --text-3:      #4b5563;
+          --bg:          #0a0a14;
+          --surface:     #13131f;
+          --border:      rgba(124,58,237,.18);
           --radius-sm:   6px;
           --radius-md:   10px;
           --radius-lg:   14px;
-          --shadow:      0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.06);
+          --shadow:      0 4px 16px rgba(0,0,0,.4);
         }
 
         /* ── Layout ── */
         .cp-page {
           min-height: 100vh;
           background: var(--bg);
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+          font-family: 'Inter', -apple-system, sans-serif;
           color: var(--text-1);
         }
 
         /* ── Nav ── */
         .cp-nav {
-          background: var(--surface);
-          border-bottom: 1px solid var(--border);
+          background: rgba(10,10,20,.9);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          border-bottom: 1px solid rgba(124,58,237,.18);
           padding: 0 24px;
           height: 52px;
           display: flex;
@@ -655,8 +660,9 @@ export default function CompressPDF() {
         .nav-logo {
           font-size: 15px;
           font-weight: 600;
-          color: var(--brand);
+          color: #9f67ff;
           text-decoration: none;
+          font-family: 'Outfit', sans-serif;
         }
         .nav-sep { color: var(--text-3); font-size: 13px; }
         .nav-current { font-size: 13px; color: var(--text-2); }
@@ -685,6 +691,7 @@ export default function CompressPDF() {
           color: var(--text-1);
           margin: 0 0 6px;
           letter-spacing: -0.4px;
+          font-family: 'Outfit', sans-serif;
         }
         .cp-subtitle {
           font-size: 14px;
@@ -942,7 +949,7 @@ export default function CompressPDF() {
         /* ── Result card ── */
         .result-card {
           background: var(--success-bg);
-          border: 1px solid #A7F3D0;
+          border: 1px solid rgba(34,197,94,.3);
           border-radius: var(--radius-lg);
           padding: 20px 22px;
           margin-top: 20px;
@@ -967,7 +974,7 @@ export default function CompressPDF() {
           margin-bottom: 18px;
         }
         .stat-box {
-          background: #fff;
+          background: #1a1a2e;
           border-radius: var(--radius-md);
           padding: 12px;
           text-align: center;
@@ -1021,7 +1028,7 @@ export default function CompressPDF() {
         /* ── Error state ── */
         .error-banner {
           background: var(--danger-bg);
-          border: 1px solid #FCA5A5;
+          border: 1px solid rgba(239,68,68,.1);
           border-radius: var(--radius-md);
           padding: 12px 16px;
           display: flex;
@@ -1193,9 +1200,9 @@ export default function CompressPDF() {
             <div
               role="alert"
               style={{
-                background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: 10,
+                background: "rgba(34,197,94,.1)", border: "1px solid rgba(34,197,94,.3)", borderRadius: 10,
                 padding: "12px 16px", display: "flex", alignItems: "center", gap: 10,
-                marginBottom: 20, fontSize: 14, color: "#057A55", fontWeight: 500,
+                marginBottom: 20, fontSize: 14, color: "#22c55e", fontWeight: 500,
               }}
             >
               <span aria-hidden="true">✅</span>

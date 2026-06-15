@@ -47,10 +47,10 @@ function NavAuth() {
   if (user) {
     return (
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ fontSize: 12, color: "#6B7280", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <span style={{ fontSize: 12, color: "#8892a4", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {user.email}
         </span>
-        <button onClick={signOut} style={{ fontSize: 12, padding: "4px 10px", border: "1px solid #E5E7EB", borderRadius: 6, background: "#fff", cursor: "pointer", color: "#374151" }}>
+        <button onClick={signOut} style={{ fontSize: 12, padding: "4px 10px", border: "1px solid rgba(124,58,237,.3)", borderRadius: 6, background: "#1a1a2e", cursor: "pointer", color: "#f1f5f9" }}>
           Sign out
         </button>
       </div>
@@ -58,7 +58,7 @@ function NavAuth() {
   }
 
   if (sent) {
-    return <span style={{ fontSize: 12, color: "#059669" }}>✓ Check your email</span>;
+    return <span style={{ fontSize: 12, color: "#22c55e" }}>✓ Check your email</span>;
   }
 
   if (showForm) {
@@ -67,21 +67,21 @@ function NavAuth() {
         <input type="email" placeholder="your@email.com" value={email} autoFocus
           onChange={e => setEmail(e.target.value)}
           onKeyDown={e => e.key === "Enter" && sendLink()}
-          style={{ fontSize: 13, padding: "5px 10px", border: "1px solid #D1D5DB", borderRadius: 6, width: 170, outline: "none" }}
+          style={{ fontSize: 13, padding: "5px 10px", border: "1px solid rgba(124,58,237,.3)", borderRadius: 6, width: 170, outline: "none", background: "#13131f", color: "#f1f5f9" }}
         />
         <button onClick={sendLink} disabled={loading}
-          style={{ fontSize: 12, padding: "5px 12px", background: "#1A56DB", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer" }}>
+          style={{ fontSize: 12, padding: "5px 12px", background: "#7c3aed", color: "#fff", border: "none", borderRadius: 6, cursor: "pointer" }}>
           {loading ? "…" : "Send link"}
         </button>
         <button onClick={() => setShowForm(false)}
-          style={{ fontSize: 13, background: "none", border: "none", cursor: "pointer", color: "#9CA3AF", lineHeight: 1 }}>✕</button>
+          style={{ fontSize: 13, background: "none", border: "none", cursor: "pointer", color: "#4b5563", lineHeight: 1 }}>✕</button>
       </div>
     );
   }
 
   return (
     <button onClick={() => setShowForm(true)}
-      style={{ fontSize: 13, padding: "5px 12px", border: "1px solid #E5E7EB", borderRadius: 6, background: "#fff", cursor: "pointer", color: "#374151" }}>
+      style={{ fontSize: 13, padding: "5px 12px", border: "1px solid rgba(124,58,237,.3)", borderRadius: 6, background: "#1a1a2e", cursor: "pointer", color: "#f1f5f9" }}>
       Sign in
     </button>
   );
@@ -95,10 +95,10 @@ function Nav({ crumb }) {
         <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
           <Link to="/" style={S.navLogo}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-              <rect x="3" y="3" width="8" height="8" rx="1.5" fill="#1A56DB" />
-              <rect x="13" y="3" width="8" height="8" rx="1.5" fill="#1A56DB" opacity=".6" />
-              <rect x="3" y="13" width="8" height="8" rx="1.5" fill="#1A56DB" opacity=".6" />
-              <rect x="13" y="13" width="8" height="8" rx="1.5" fill="#1A56DB" opacity=".35" />
+              <rect x="3" y="3" width="8" height="8" rx="1.5" fill="#7c3aed" />
+              <rect x="13" y="3" width="8" height="8" rx="1.5" fill="#7c3aed" opacity=".6" />
+              <rect x="3" y="13" width="8" height="8" rx="1.5" fill="#7c3aed" opacity=".6" />
+              <rect x="13" y="13" width="8" height="8" rx="1.5" fill="#7c3aed" opacity=".35" />
             </svg>
             <span>JAVE Tools</span>
           </Link>
@@ -414,9 +414,9 @@ function PricingCard({ plan, isPro, user }) {
 
   const inputStyle = {
     width: "100%", boxSizing: "border-box", padding: "9px 12px",
-    fontSize: 14, border: "1.5px solid #E5E7EB", borderRadius: 8,
+    fontSize: 14, border: "1.5px solid rgba(124,58,237,.3)", borderRadius: 8,
     outline: "none", fontFamily: "inherit", marginBottom: 8,
-    color: "#111827", background: "#fff",
+    color: "#f1f5f9", background: "#13131f",
   };
 
   return (
@@ -438,17 +438,17 @@ function PricingCard({ plan, isPro, user }) {
         ))}
       </ul>
 
-      {error && <p style={{ fontSize: 11, color: "#C81E1E", margin: "0 0 8px" }}>{error}</p>}
+      {error && <p style={{ fontSize: 11, color: "#ef4444", margin: "0 0 8px" }}>{error}</p>}
 
       {plan.highlight ? (
         <>
           {isPro ? (
             <div style={{ textAlign: "center", padding: "12px 0" }}>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#F0FDF4", border: "1.5px solid #86EFAC", borderRadius: 8, padding: "10px 20px", color: "#166534", fontWeight: 700, fontSize: 15 }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(34,197,94,.1)", border: "1.5px solid rgba(34,197,94,.3)", borderRadius: 8, padding: "10px 20px", color: "#22c55e", fontWeight: 700, fontSize: 15 }}>
                 ✓ Current plan
               </div>
               {user?.email && (
-                <p style={{ fontSize: 11, color: "#6B7280", margin: "8px 0 0" }}>{user.email}</p>
+                <p style={{ fontSize: 11, color: "#8892a4", margin: "8px 0 0" }}>{user.email}</p>
               )}
             </div>
           ) : (
@@ -465,7 +465,7 @@ function PricingCard({ plan, isPro, user }) {
           )}
           {step === "email" && (
             <>
-              <p style={{ fontSize: 12, color: "#6B7280", margin: "0 0 8px" }}>Create a free account to upgrade</p>
+              <p style={{ fontSize: 12, color: "#8892a4", margin: "0 0 8px" }}>Create a free account to upgrade</p>
               <input type="email" placeholder="your@email.com" value={email} autoFocus
                 style={inputStyle} onChange={e => { setEmail(e.target.value); setError(""); }}
                 onKeyDown={e => e.key === "Enter" && sendOtp()} />
@@ -476,13 +476,13 @@ function PricingCard({ plan, isPro, user }) {
           )}
           {step === "otp" && (
             <>
-              <p style={{ fontSize: 13, color: "#374151", margin: "0 0 4px", textAlign: "center" }}>
+              <p style={{ fontSize: 13, color: "#f1f5f9", margin: "0 0 4px", textAlign: "center" }}>
                 Check your inbox at <strong>{email}</strong>
               </p>
-              <p style={{ fontSize: 12, color: "#6B7280", margin: "0 0 12px", textAlign: "center" }}>
+              <p style={{ fontSize: 12, color: "#8892a4", margin: "0 0 12px", textAlign: "center" }}>
                 Click the link in the email — this page will continue automatically.
               </p>
-              <p style={{ fontSize: 11, color: "#9CA3AF", margin: "0 0 6px", textAlign: "center" }}>
+              <p style={{ fontSize: 11, color: "#4b5563", margin: "0 0 6px", textAlign: "center" }}>
                 Received a 6-digit code instead? Enter it below:
               </p>
               <input type="text" inputMode="numeric" placeholder="000000" value={otp} maxLength={6}
@@ -500,14 +500,14 @@ function PricingCard({ plan, isPro, user }) {
             </>
           )}
           {step === "redirecting" && (
-            <p style={{ textAlign: "center", color: "#9CA3AF", fontSize: 13 }}>⏳ Opening checkout…</p>
+            <p style={{ textAlign: "center", color: "#4b5563", fontSize: 13 }}>⏳ Opening checkout…</p>
           )}
           {step === "already-pro" && (
             <div style={{ textAlign: "center", padding: "8px 0" }}>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#F0FDF4", border: "1.5px solid #86EFAC", borderRadius: 8, padding: "10px 20px", color: "#166534", fontWeight: 700, fontSize: 15, marginBottom: 8 }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(34,197,94,.1)", border: "1.5px solid rgba(34,197,94,.3)", borderRadius: 8, padding: "10px 20px", color: "#22c55e", fontWeight: 700, fontSize: 15, marginBottom: 8 }}>
                 ✓ You're already on Pro!
               </div>
-              <p style={{ fontSize: 12, color: "#6B7280", margin: "0 0 10px" }}>Your Pro access is active on this account.</p>
+              <p style={{ fontSize: 12, color: "#8892a4", margin: "0 0 10px" }}>Your Pro access is active on this account.</p>
               <button onClick={() => window.location.reload()}
                 style={{ ...S.planCta, ...S.planCtaHighlight, border: "none", width: "100%", cursor: "pointer", fontFamily: "inherit" }}>
                 Refresh to apply
@@ -571,10 +571,10 @@ function PricingPage() {
         )}
 
         <header style={{ marginBottom: 36 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.5px", margin: "0 0 8px" }}>
+          <h1 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.5px", margin: "0 0 8px", color: "#f1f5f9", fontFamily: "'Outfit', sans-serif" }}>
             Simple pricing
           </h1>
-          <p style={{ fontSize: 15, color: "#4B5563", margin: 0 }}>
+          <p style={{ fontSize: 15, color: "#8892a4", margin: 0 }}>
             Start free. Upgrade when you need more.
           </p>
         </header>
@@ -586,7 +586,7 @@ function PricingPage() {
         </div>
 
         <div style={{ marginTop: 40, textAlign: "center" }}>
-          <Link to="/" style={{ fontSize: 13, color: "#1A56DB", textDecoration: "none" }}>
+          <Link to="/" style={{ fontSize: 13, color: "#9f67ff", textDecoration: "none" }}>
             ← Back to all tools
           </Link>
         </div>
@@ -630,16 +630,16 @@ export default function App() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const S = {
   page: {
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontFamily: "'Inter', -apple-system, sans-serif",
     minHeight: "100vh",
-    background: "#F9FAFB",
-    color: "#111827",
+    background: "#0a0a14",
+    color: "#f1f5f9",
   },
-
-  /* Nav */
   nav: {
-    background: "#fff",
-    borderBottom: "1px solid #E5E7EB",
+    background: "rgba(10,10,20,.9)",
+    borderBottom: "1px solid rgba(124,58,237,.18)",
+    backdropFilter: "blur(12px)",
+    WebkitBackdropFilter: "blur(12px)",
     position: "sticky",
     top: 0,
     zIndex: 100,
@@ -659,14 +659,14 @@ const S = {
     gap: 8,
     fontWeight: 700,
     fontSize: 15,
-    color: "#1A56DB",
+    color: "#9f67ff",
     textDecoration: "none",
+    fontFamily: "'Outfit', sans-serif",
   },
-  navSep: { color: "#D1D5DB", fontSize: 14 },
-  navCrumb: { fontSize: 13, color: "#4B5563" },
+  navSep: { color: "rgba(124,58,237,.4)", fontSize: 14 },
+  navCrumb: { fontSize: 13, color: "#8892a4" },
   navCta: {
-    marginLeft: "auto",
-    background: "#1A56DB",
+    background: "#7c3aed",
     color: "#fff",
     fontSize: 12,
     fontWeight: 600,
@@ -674,25 +674,20 @@ const S = {
     borderRadius: 999,
     textDecoration: "none",
     whiteSpace: "nowrap",
-    transition: "background 0.15s",
+    boxShadow: "0 0 14px rgba(124,58,237,.25)",
+    flexShrink: 0,
   },
-
-  /* Hero */
   hero: {
-    background: "linear-gradient(135deg, #EEF3FF 0%, #F0F4FF 50%, #F9FAFB 100%)",
-    borderBottom: "1px solid #E5E7EB",
+    background: "radial-gradient(ellipse at 50% 0%, rgba(124,58,237,.15) 0%, transparent 70%), #0a0a14",
+    borderBottom: "1px solid rgba(124,58,237,.18)",
     padding: "60px 24px 56px",
   },
-  heroInner: {
-    maxWidth: 640,
-    margin: "0 auto",
-    textAlign: "center",
-  },
+  heroInner: { maxWidth: 640, margin: "0 auto", textAlign: "center" },
   heroBadge: {
     display: "inline-block",
-    background: "#fff",
-    border: "1px solid #C7D7FD",
-    color: "#1A56DB",
+    background: "rgba(124,58,237,.12)",
+    border: "1px solid rgba(124,58,237,.3)",
+    color: "#9f67ff",
     fontSize: 12,
     fontWeight: 500,
     padding: "4px 12px",
@@ -706,50 +701,35 @@ const S = {
     letterSpacing: "-0.8px",
     lineHeight: 1.15,
     margin: "0 0 16px",
-    color: "#0F172A",
+    fontFamily: "'Outfit', sans-serif",
+    background: "linear-gradient(135deg, #ffffff 40%, #9f67ff 100%)",
+    WebkitBackgroundClip: "text",
+    WebkitTextFillColor: "transparent",
+    backgroundClip: "text",
   },
   heroSub: {
     fontSize: 16,
-    color: "#4B5563",
+    color: "#8892a4",
     lineHeight: 1.7,
     margin: "0 0 28px",
     maxWidth: 480,
     marginLeft: "auto",
     marginRight: "auto",
   },
-  heroStats: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 16,
-    flexWrap: "wrap",
-  },
-  heroStat: { fontSize: 13, color: "#6B7280" },
-  heroStatDivider: { width: 1, height: 14, background: "#D1D5DB" },
-
-  /* Main content */
-  main: {
-    maxWidth: 1100,
-    margin: "0 auto",
-    padding: "48px 24px 80px",
-  },
-
-  /* Section */
+  heroStats: { display: "flex", alignItems: "center", justifyContent: "center", gap: 16, flexWrap: "wrap" },
+  heroStat: { fontSize: 13, color: "#8892a4" },
+  heroStatDivider: { width: 1, height: 14, background: "rgba(124,58,237,.3)" },
+  main: { maxWidth: 1100, margin: "0 auto", padding: "48px 24px 80px" },
   section: { marginBottom: 52 },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 700,
-    color: "#0F172A",
+    color: "#f1f5f9",
     margin: "0 0 6px",
     letterSpacing: "-0.2px",
+    fontFamily: "'Outfit', sans-serif",
   },
-  sectionSub: {
-    fontSize: 14,
-    color: "#6B7280",
-    margin: "0 0 24px",
-  },
-
-  /* Tool grid */
+  sectionSub: { fontSize: 14, color: "#8892a4", margin: "0 0 24px" },
   toolGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
@@ -757,38 +737,30 @@ const S = {
     marginTop: 16,
   },
   toolCard: {
-    background: "#fff",
-    border: "1px solid #E5E7EB",
+    background: "#13131f",
+    border: "1px solid rgba(124,58,237,.18)",
     borderRadius: 10,
     padding: "14px 16px",
     display: "flex",
     alignItems: "center",
     gap: 12,
     transition: "border-color 0.15s, box-shadow 0.15s",
-    boxShadow: "0 1px 2px rgba(0,0,0,.04)",
+    boxShadow: "0 1px 3px rgba(0,0,0,.3)",
   },
-  toolCardDim: { opacity: 0.55 },
+  toolCardDim: { opacity: 0.4 },
   toolIcon: { fontSize: 22, flexShrink: 0, width: 28, textAlign: "center" },
   toolInfo: { flex: 1, minWidth: 0 },
-  toolName: { fontSize: 13, fontWeight: 600, color: "#111827", margin: "0 0 2px" },
-  toolDesc: { fontSize: 11, color: "#6B7280", margin: 0 },
-  toolBadgeReady: {
-    fontSize: 11,
-    color: "#1A56DB",
-    fontWeight: 600,
-    whiteSpace: "nowrap",
-    flexShrink: 0,
-  },
+  toolName: { fontSize: 13, fontWeight: 600, color: "#f1f5f9", margin: "0 0 2px" },
+  toolDesc: { fontSize: 11, color: "#8892a4", margin: 0 },
+  toolBadgeReady: { fontSize: 11, color: "#9f67ff", fontWeight: 600, whiteSpace: "nowrap", flexShrink: 0 },
   toolBadgeSoon: {
     fontSize: 10,
-    color: "#9CA3AF",
-    background: "#F3F4F6",
+    color: "#4b5563",
+    background: "#1a1a2e",
     padding: "2px 7px",
     borderRadius: 999,
     flexShrink: 0,
   },
-
-  /* Pricing */
   pricingGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
@@ -796,21 +768,21 @@ const S = {
     maxWidth: 640,
   },
   planCard: {
-    background: "#fff",
-    border: "1.5px solid #E5E7EB",
+    background: "#13131f",
+    border: "1.5px solid rgba(124,58,237,.18)",
     borderRadius: 14,
     padding: "28px 24px",
     position: "relative",
   },
   planCardHighlight: {
-    border: "1.5px solid #1A56DB",
-    boxShadow: "0 4px 24px rgba(26,86,219,.1)",
+    border: "1.5px solid #7c3aed",
+    boxShadow: "0 0 30px rgba(124,58,237,.25)",
   },
   planBadge: {
     position: "absolute",
     top: -1,
     right: 20,
-    background: "#1A56DB",
+    background: "#7c3aed",
     color: "#fff",
     fontSize: 10,
     fontWeight: 600,
@@ -819,21 +791,21 @@ const S = {
     letterSpacing: "0.04em",
     textTransform: "uppercase",
   },
-  planName: { fontSize: 13, fontWeight: 600, color: "#6B7280", margin: "0 0 10px" },
+  planName: { fontSize: 13, fontWeight: 600, color: "#8892a4", margin: "0 0 10px" },
   planPriceRow: { display: "flex", alignItems: "baseline", gap: 3, marginBottom: 20 },
-  planPrice: { fontSize: 36, fontWeight: 800, color: "#0F172A", letterSpacing: "-1px" },
-  planPriceHighlight: { color: "#1A56DB" },
-  planPeriod: { fontSize: 13, color: "#6B7280" },
+  planPrice: { fontSize: 36, fontWeight: 800, color: "#f1f5f9", letterSpacing: "-1px", fontFamily: "'Outfit', sans-serif" },
+  planPriceHighlight: { color: "#9f67ff" },
+  planPeriod: { fontSize: 13, color: "#8892a4" },
   planFeatures: { listStyle: "none", margin: "0 0 24px", padding: 0, display: "flex", flexDirection: "column", gap: 8 },
-  planFeatureItem: { fontSize: 13, color: "#374151", display: "flex", alignItems: "center", gap: 8 },
-  planCheck: { color: "#9CA3AF", fontWeight: 700, flexShrink: 0 },
-  planCheckHighlight: { color: "#1A56DB" },
+  planFeatureItem: { fontSize: 13, color: "#f1f5f9", display: "flex", alignItems: "center", gap: 8 },
+  planCheck: { color: "#4b5563", fontWeight: 700, flexShrink: 0 },
+  planCheckHighlight: { color: "#7c3aed" },
   planCta: {
     display: "block",
     textAlign: "center",
-    border: "1.5px solid #E5E7EB",
-    background: "#fff",
-    color: "#374151",
+    border: "1.5px solid rgba(124,58,237,.3)",
+    background: "#1a1a2e",
+    color: "#8892a4",
     fontSize: 13,
     fontWeight: 600,
     padding: "11px",
@@ -842,30 +814,27 @@ const S = {
     transition: "background 0.15s",
   },
   planCtaHighlight: {
-    background: "#1A56DB",
-    border: "1.5px solid #1A56DB",
+    background: "#7c3aed",
+    border: "1.5px solid #7c3aed",
     color: "#fff",
+    boxShadow: "0 0 14px rgba(124,58,237,.25)",
   },
-
-  /* Trust strip */
   trustStrip: {
     display: "flex",
     flexWrap: "wrap",
     gap: 12,
     justifyContent: "center",
-    background: "#fff",
-    border: "1px solid #E5E7EB",
+    background: "#13131f",
+    border: "1px solid rgba(124,58,237,.18)",
     borderRadius: 12,
     padding: "20px 24px",
   },
   trustItem: { display: "flex", alignItems: "center", gap: 8 },
   trustIcon: { fontSize: 16 },
-  trustLabel: { fontSize: 13, color: "#4B5563", fontWeight: 500 },
-
-  /* Footer */
+  trustLabel: { fontSize: 13, color: "#8892a4", fontWeight: 500 },
   footer: {
-    borderTop: "1px solid #E5E7EB",
-    background: "#fff",
+    borderTop: "1px solid rgba(124,58,237,.18)",
+    background: "#0d0d1a",
     padding: "20px 24px",
   },
   footerInner: {
@@ -877,11 +846,9 @@ const S = {
     flexWrap: "wrap",
     gap: 8,
   },
-  footerLogo: { fontWeight: 700, fontSize: 14, color: "#1A56DB" },
-  footerCopy: { fontSize: 12, color: "#9CA3AF" },
-  footerLink: { color: "#6B7280", textDecoration: "none" },
-
-  /* Coming soon page */
+  footerLogo: { fontWeight: 700, fontSize: 14, color: "#9f67ff", fontFamily: "'Outfit', sans-serif" },
+  footerCopy: { fontSize: 12, color: "#4b5563" },
+  footerLink: { color: "#8892a4", textDecoration: "none" },
   comingSoon: {
     display: "flex",
     flexDirection: "column",
@@ -890,15 +857,23 @@ const S = {
     minHeight: "calc(100vh - 54px)",
     padding: "40px 24px",
     textAlign: "center",
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontFamily: "'Inter', -apple-system, sans-serif",
+    background: "#0a0a14",
   },
-  comingTitle: { fontSize: 24, fontWeight: 700, color: "#111827", margin: "16px 0 8px" },
-  comingBody: { fontSize: 14, color: "#6B7280", margin: "0 0 24px" },
-  comingBack: { fontSize: 14, color: "#1A56DB", textDecoration: "none" },
-
+  comingTitle: { fontSize: 24, fontWeight: 700, color: "#f1f5f9", margin: "16px 0 8px", fontFamily: "'Outfit', sans-serif" },
+  comingBody: { fontSize: 14, color: "#8892a4", margin: "0 0 24px" },
+  comingBack: { fontSize: 14, color: "#9f67ff", textDecoration: "none" },
   successBanner: {
-    background: "#ECFDF5", border: "1px solid #A7F3D0", borderRadius: 10,
-    padding: "14px 18px", display: "flex", alignItems: "center", gap: 10,
-    marginBottom: 28, fontSize: 14, color: "#057A55", fontWeight: 500,
+    background: "rgba(34,197,94,.1)",
+    border: "1px solid rgba(34,197,94,.3)",
+    borderRadius: 10,
+    padding: "14px 18px",
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 28,
+    fontSize: 14,
+    color: "#22c55e",
+    fontWeight: 500,
   },
 };
